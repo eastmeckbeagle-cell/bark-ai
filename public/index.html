@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bark AI — AI-Powered Conversations</title>
+  <meta name="description" content="Chat with Bark AI, the world's most advanced canine intelligence system.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #2a2a2a;
+      --bg-user-msg: #2c2c3a;
+      --bg-ai-msg: transparent;
+      --text-primary: #e8e8e8;
+      --text-secondary: #999;
+      --text-muted: #666;
+      --accent: #8b5cf6;
+      --accent-glow: rgba(139, 92, 246, 0.25);
+      --accent-hover: #a78bfa;
+      --border: rgba(255,255,255,0.06);
+      --border-input: rgba(255,255,255,0.12);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --max-chat-width: 780px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,15,15,0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    .header-badge {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-left: 4px;
+    }
+
+    /* ── Chat Area ──────────────────────────────────────── */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    .chat-area::-webkit-scrollbar { width: 6px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 3px; }
+
+    .chat-container {
+      max-width: var(--max-chat-width);
+      margin: 0 auto;
+      padding: 24px 24px 32px;
+    }
+
+    /* ── Welcome Screen ────────────────────────────────── */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px;
+      animation: fadeUp 0.6s ease-out;
+    }
+
+    .welcome-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .welcome h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #e8e8e8 0%, #a78bfa 50%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .welcome p {
+      color: var(--text-secondary);
+      font-size: 15px;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+
+    .welcome-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 32px;
+      max-width: 600px;
+    }
+
+    .suggestion-chip {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-input);
+      color: var(--text-secondary);
+      padding: 10px 18px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-chip:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    /* ── Messages ───────────────────────────────────────── */
+    .message {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 28px;
+      animation: fadeUp 0.35s ease-out;
+    }
+
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    .message.user .message-avatar {
+      background: linear-gradient(135deg, #3b3b5c, #2c2c3a);
+    }
+
+    .message.assistant .message-avatar {
+      background: linear-gradient(135deg, var(--accent), #6d28d9);
+    }
+
+    .message-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .message-sender {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+    }
+
+    .message.assistant .message-sender { color: var(--accent-hover); }
+
+    .message-content {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-primary);
+      word-wrap: break-word;
+    }
+
+    .message-content p { margin-bottom: 8px; }
+    .message-content p:last-child { margin-bottom: 0; }
+
+    /* ── Thinking Indicator ─────────────────────────────── */
+    .thinking-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+    }
+
+    .thinking-indicator span {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .thinking-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .thinking-dots .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .thinking-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    .thinking-tip {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      animation: fadeUp 0.3s ease-out;
+      max-width: 380px;
+    }
+
+    .thinking-tip::before {
+      content: '💡 ';
+    }
+
+    /* ── Input Area ─────────────────────────────────────── */
+    .input-area {
+      border-top: 1px solid var(--border);
+      background: var(--bg-primary);
+      padding: 16px 24px 24px;
+    }
+
+    .input-wrapper {
+      max-width: var(--max-chat-width);
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .input-box {
+      display: flex;
+      align-items: flex-end;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius);
+      padding: 8px 8px 8px 20px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    #chatInput {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      max-height: 150px;
+      padding: 8px 0;
+    }
+
+    #chatInput::placeholder { color: var(--text-muted); }
+
+    #sendBtn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    #sendBtn:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: scale(1.05);
+    }
+
+    #sendBtn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .input-disclaimer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* ── Animations ─────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .welcome h1 { font-size: 24px; }
+      .welcome-icon { font-size: 48px; }
+      .chat-container { padding: 16px; }
+      .input-area { padding: 12px 16px 20px; }
+      .input-box { padding: 6px 6px 6px 16px; border-radius: 16px; }
+      .suggestion-chip { font-size: 12px; padding: 8px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-brand">
+      <span class="header-logo">🐾</span>
+      <span class="header-title">Bark AI</span>
+      <span class="header-badge">✨</span>
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area" id="chatArea">
+    <div class="chat-container" id="chatContainer">
+      <!-- Welcome screen (hidden after first message) -->
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">🐶</div>
+        <h1>What can I sniff out for you?</h1>
+        <p>Bark AI uses advanced canine neural networks trained on over 3 billion tennis balls.</p>
+        <div class="welcome-suggestions">
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Explain quantum physics like I'm a golden retriever</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Write a haiku about homework</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Is a hot dog a sandwich?</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Why do teachers say "I'll wait"?</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <div class="input-box">
+        <textarea
+          id="chatInput"
+          placeholder="Message Bark AI…"
+          rows="1"
+          autofocus
+        ></textarea>
+        <button id="sendBtn" title="Send message" aria-label="Send">
+          &#8593;
+        </button>
+      </div>
+      <div class="input-disclaimer">
+        Bark AI can make mistakes. Please don't feed it chocolate.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api/chat';
+
+    const chatArea = document.getElementById('chatArea');
+    const chatContainer = document.getElementById('chatContainer');
+    const welcome = document.getElementById('welcome');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let isWaiting = false;
+
+    // ── Auto-resize textarea ──────────────────────────────
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+      sendBtn.disabled = chatInput.value.trim().length === 0 || isWaiting;
+    });
+
+    // ── Enter to send (Shift+Enter for newline) ──────────
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
+    sendBtn.addEventListener('click', handleSend);
+
+    // ── Suggestion chips ──────────────────────────────────
+    function sendSuggestion(chip) {
+      chatInput.value = chip.textContent;
+      handleSend();
+    }
+
+    // ── Send a message ────────────────────────────────────
+    async function handleSend() {
+      const prompt = chatInput.value.trim();
+      if (!prompt || isWaiting) return;
+
+      // Hide welcome screen
+      if (welcome) welcome.style.display = 'none';
+
+      // Add user message
+      appendMessage('user', prompt);
+
+      // Clear input
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      sendBtn.disabled = true;
+      isWaiting = true;
+
+      // Show thinking indicator
+      const thinkingEl = appendThinking();
+      scrollToBottom();
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        });
+
+        const data = await res.json();
+
+        // Remove thinking indicator
+        thinkingEl.remove();
+
+        if (data.timedOut) {
+          appendMessage('assistant', data.response || 'The beagles seem to be napping… try again later! 🐾');
+        } else {
+          appendMessage('assistant', data.response);
+        }
+      } catch (err) {
+        thinkingEl.remove();
+        appendMessage('assistant', 'Woof… something went wrong. The beagles tripped over a network cable. 🐕');
+      }
+
+      isWaiting = false;
+      clearThinkingTips();
+      sendBtn.disabled = chatInput.value.trim().length === 0;
+      chatInput.focus();
+      scrollToBottom();
+    }
+
+    // ── Append a message to the chat ──────────────────────
+    function appendMessage(role, text) {
+      const msg = document.createElement('div');
+      msg.className = `message ${role}`;
+
+      const avatarEmoji = role === 'user' ? '👤' : '🐶';
+      const senderName = role === 'user' ? 'You' : 'Bark AI';
+
+      msg.innerHTML = `
+        <div class="message-avatar">${avatarEmoji}</div>
+        <div class="message-body">
+          <div class="message-sender">${senderName}</div>
+          <div class="message-content"><p>${escapeHtml(text)}</p></div>
+        </div>
+      `;
+
+      chatContainer.appendChild(msg);
+      scrollToBottom();
+      return msg;
+    }
+
+    // ── Thinking indicator ────────────────────────────────
+    const thinkingTips = [
+      'This can take a while if you asked an exceptionally long question.',
+      'Our beagles are hand-crafting your response with care.',
+      'Each response is artisanally sniffed and approved.',
+      'Fun fact: Bark AI has a 97% belly rub accuracy rate.',
+      'Our servers run on kibble and good vibes.',
+      'Please hold — a beagle is barking your answer into morse code.',
+      'Great question! The beagles are debating amongst themselves.',
+      'Your prompt is being reviewed by our top dog.',
+      'Hang tight — the pack is on it.',
+      'Bark AI never copies homework. It sniffs out original answers.',
+    ];
+    let tipTimer = null;
+    let tipIndex = 0;
+
+    function appendThinking() {
+      const msg = document.createElement('div');
+      msg.className = 'message assistant';
+      msg.innerHTML = `
+        <div class="message-avatar">🐶</div>
+        <div class="message-body">
+          <div class="message-sender">Bark AI</div>
+          <div class="thinking-indicator">
+            <div class="thinking-dots">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+            <span>Sniffing for an answer…</span>
+          </div>
+          <div class="thinking-tip-container"></div>
+        </div>
+      `;
+      chatContainer.appendChild(msg);
+
+      // Start showing tips after 8 seconds, rotate every 10 seconds
+      const tipContainer = msg.querySelector('.thinking-tip-container');
+      tipIndex = Math.floor(Math.random() * thinkingTips.length);
+
+      const showTip = () => {
+        tipContainer.innerHTML = `<div class="thinking-tip">${thinkingTips[tipIndex]}</div>`;
+        tipIndex = (tipIndex + 1) % thinkingTips.length;
+        scrollToBottom();
+      };
+
+      tipTimer = setTimeout(() => {
+        showTip();
+        tipTimer = setInterval(showTip, 10000);
+      }, 8000);
+
+      return msg;
+    }
+
+    function clearThinkingTips() {
+      if (tipTimer) {
+        clearTimeout(tipTimer);
+        clearInterval(tipTimer);
+        tipTimer = null;
+      }
+    }
+
+    // ── Helpers ───────────────────────────────────────────
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        chatArea.scrollTop = chatArea.scrollHeight;
+      });
+    }
+
+    // Initial state
+    sendBtn.disabled = true;
+  </script>
+</body>
+</html>
