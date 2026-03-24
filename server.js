@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-//  Beagle Chat — "Wizard of Oz" AI Chat Backend
+//  Bark AI — "Wizard of Oz" AI Chat Backend
 //  Express API + Discord Bot in a single process
+//  Uses polling instead of long-held connections
 // ─────────────────────────────────────────────────────────────
 
 require('dotenv').config();
@@ -30,13 +31,14 @@ if (!DISCORD_BOT_TOKEN || !DISCORD_WEBHOOK_URL) {
 }
 
 // ── Shared In-Memory Store ──────────────────────────────────
-//  pendingChats: Map<taskId, { res, prompt, timestamp, timer, webhookMsgId }>
+//  pendingChats: Map<taskId, { prompt, timestamp, timer, webhookMsgId, response, resolved }>
 const pendingChats = new Map();
 // Reverse lookup: webhook message ID → task ID (for reply-based resolution)
 const msgIdToTaskId = new Map();
 let nextTaskId = 1;
 
 const TIMEOUT_MS = 6 * 60 * 60 * 1000; // 6 hours
+const CLEANUP_AFTER_MS = 5 * 60 * 1000; // keep resolved tasks for 5 min before cleanup
 
 // ── Discord Webhook Client (for dispatching prompts) ────────
 const webhook = new WebhookClient({ url: DISCORD_WEBHOOK_URL });
@@ -47,6 +49,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// POST /api/chat — submit a prompt, returns immediately with a taskId
 app.post('/api/chat', async (req, res) => {
   const { prompt } = req.body;
 
@@ -56,48 +59,76 @@ app.post('/api/chat', async (req, res) => {
 
   const taskId = nextTaskId++;
 
-  // Set up an auto-timeout so the HTTP connection doesn't hang forever
+  // Set up an auto-timeout
   const timer = setTimeout(() => {
     if (pendingChats.has(taskId)) {
       const entry = pendingChats.get(taskId);
-      pendingChats.delete(taskId);
-      entry.res.json({
-        response: '🐶 The beagles are busy sniffing around… try again later!',
-        timedOut: true,
-      });
+      entry.response = '🐶 The beagles are busy sniffing around… try again later!';
+      entry.timedOut = true;
+      entry.resolved = true;
+      if (entry.webhookMsgId) msgIdToTaskId.delete(entry.webhookMsgId);
       console.log(`⏰  Task ${taskId} timed out.`);
+      // Clean up after a grace period so the frontend can still poll the result
+      setTimeout(() => pendingChats.delete(taskId), CLEANUP_AFTER_MS);
     }
   }, TIMEOUT_MS);
 
-  // Store the response object — we'll resolve it later via /bark or a reply
-  pendingChats.set(taskId, { res, prompt: prompt.trim(), timestamp: Date.now(), timer, webhookMsgId: null });
+  // Store the task — no res object needed anymore
+  pendingChats.set(taskId, {
+    prompt: prompt.trim(),
+    timestamp: Date.now(),
+    timer,
+    webhookMsgId: null,
+    response: null,
+    timedOut: false,
+    resolved: false,
+  });
 
   console.log(`📩  Task ${taskId} created for prompt: "${prompt.trim()}"`);
 
   // Dispatch to the Discord staff channel
   try {
     const sentMsg = await webhook.send({
-      username: 'Beagle Chat 🐾',
+      username: 'Bark AI 🐾',
       content: [
-        `**📨 New Beagle Chat prompt!**`,
+        `**📨 New Bark AI prompt!**`,
         `> **Task ID:** \`${taskId}\``,
         `> **Prompt:** ${prompt.trim()}`,
         ``,
         `💬 **Reply to this message** or use \`/bark task_id:${taskId} response:...\``,
       ].join('\n'),
     });
-    // Track the webhook message ID so we can match replies
     if (sentMsg && sentMsg.id && pendingChats.has(taskId)) {
       pendingChats.get(taskId).webhookMsgId = sentMsg.id;
       msgIdToTaskId.set(sentMsg.id, taskId);
     }
   } catch (err) {
     console.error('⚠️  Failed to send webhook:', err.message);
-    // The request is still pending — staff can still use /bark manually
   }
 
-  // NOTE: We intentionally do NOT call res.json() here.
-  // The response will be sent when a staff member uses /bark.
+  // Return immediately with the task ID
+  res.json({ taskId });
+});
+
+// GET /api/chat/:taskId — poll for a response
+app.get('/api/chat/:taskId', (req, res) => {
+  const taskId = parseInt(req.params.taskId, 10);
+
+  if (!pendingChats.has(taskId)) {
+    return res.json({ status: 'not_found' });
+  }
+
+  const entry = pendingChats.get(taskId);
+
+  if (entry.resolved) {
+    return res.json({
+      status: 'resolved',
+      response: entry.response,
+      timedOut: entry.timedOut,
+    });
+  }
+
+  res.json({ status: 'pending' });
 });
 
 // Health-check endpoint
@@ -108,6 +139,23 @@ app.get('/api/health', (_req, res) => {
 const server = app.listen(PORT, () => {
   console.log(`🚀  Express listening on port ${PORT}`);
 });
+
+// ── Helper: resolve a task ──────────────────────────────────
+function resolveTask(taskId, response) {
+  const entry = pendingChats.get(taskId);
+  if (!entry || entry.resolved) return false;
+
+  clearTimeout(entry.timer);
+  entry.response = response;
+  entry.resolved = true;
+  if (entry.webhookMsgId) msgIdToTaskId.delete(entry.webhookMsgId);
+
+  // Clean up after a grace period
+  setTimeout(() => pendingChats.delete(taskId), CLEANUP_AFTER_MS);
+
+  console.log(`✅  Task ${taskId} resolved.`);
+  return true;
+}
 
 // ── Discord Bot ─────────────────────────────────────────────
 const client = new Client({
@@ -124,7 +172,7 @@ client.once('ready', async () => {
 
   const barkCommand = new SlashCommandBuilder()
     .setName('bark')
-    .setDescription('Reply to a pending Beagle Chat prompt')
+    .setDescription('Reply to a pending Bark AI prompt')
     .addIntegerOption((opt) =>
       opt
         .setName('task_id')
@@ -159,30 +207,14 @@ client.on('interactionCreate', async (interaction) => {
   const taskId = interaction.options.getInteger('task_id');
   const response = interaction.options.getString('response');
 
-  if (!pendingChats.has(taskId)) {
+  if (!pendingChats.has(taskId) || pendingChats.get(taskId).resolved) {
     return interaction.reply({
       content: `❌ Task **${taskId}** not found. It may have already been answered or timed out.`,
       ephemeral: true,
     });
   }
 
-  // Resolve the pending HTTP request
-  const entry = pendingChats.get(taskId);
-  clearTimeout(entry.timer);
-  if (entry.webhookMsgId) msgIdToTaskId.delete(entry.webhookMsgId);
-  pendingChats.delete(taskId);
-
-  try {
-    entry.res.json({ response });
-  } catch (err) {
-    console.error(`⚠️  Failed to send response for task ${taskId}:`, err.message);
-    return interaction.reply({
-      content: `⚠️ Task **${taskId}** was found but the client connection was already closed.`,
-      ephemeral: true,
-    });
-  }
-
-  console.log(`✅  Task ${taskId} resolved by ${interaction.user.tag}`);
+  resolveTask(taskId, response);
 
   await interaction.reply({
     content: `✅ Response sent for Task **${taskId}**!\n> ${response}`,
@@ -191,16 +223,14 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 // ── Reply-Based Resolution ──────────────────────────────────
-// Staff can simply reply to the webhook message instead of using /bark
 client.on('messageCreate', async (message) => {
-  // Ignore bot messages and messages without a reply reference
   if (message.author.bot || !message.reference?.messageId) return;
 
   const refId = message.reference.messageId;
   if (!msgIdToTaskId.has(refId)) return;
 
   const taskId = msgIdToTaskId.get(refId);
-  if (!pendingChats.has(taskId)) {
+  if (!pendingChats.has(taskId) || pendingChats.get(taskId).resolved) {
     msgIdToTaskId.delete(refId);
     return;
   }
@@ -208,19 +238,8 @@ client.on('messageCreate', async (message) => {
   const response = message.content.trim();
   if (!response) return;
 
-  const entry = pendingChats.get(taskId);
-  clearTimeout(entry.timer);
-  msgIdToTaskId.delete(refId);
-  pendingChats.delete(taskId);
+  resolveTask(taskId, response);
 
-  try {
-    entry.res.json({ response });
-  } catch (err) {
-    console.error(`⚠️  Failed to send response for task ${taskId}:`, err.message);
-    return message.reply('⚠️ The client connection was already closed.');
-  }
-
-  console.log(`✅  Task ${taskId} resolved via reply by ${message.author.tag}`);
   await message.reply(`✅ Response sent for Task **${taskId}**!`);
 });
 
@@ -229,20 +248,8 @@ client.login(DISCORD_BOT_TOKEN);
 // ── Graceful Shutdown ───────────────────────────────────────
 process.on('SIGINT', () => {
   console.log('\n🛑  Shutting down…');
-
-  // Resolve any pending chats with a shutdown message
-  for (const [taskId, entry] of pendingChats) {
-    clearTimeout(entry.timer);
-    if (entry.webhookMsgId) msgIdToTaskId.delete(entry.webhookMsgId);
-    try {
-      entry.res.json({
-        response: '🐶 The beagles have gone to sleep. Try again later!',
-        timedOut: true,
-      });
-    } catch { /* client already disconnected */ }
-  }
   pendingChats.clear();
-
+  msgIdToTaskId.clear();
   client.destroy();
   server.close(() => process.exit(0));
 });

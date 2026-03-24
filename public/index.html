@@ -27,6 +27,11 @@
       --radius: 20px;
       --radius-sm: 12px;
       --max-chat-width: 780px;
+
+      /* Ultra Mode Overrides */
+      --ultra-bg: #050510;
+      --ultra-accent: #f59e0b; /* Amber/Gold */
+      --ultra-glow: rgba(245, 158, 11, 0.3);
     }
 
     body {
@@ -37,6 +42,72 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      transition: background-color 0.8s ease;
+    }
+
+    body.ultra-active {
+      background: var(--ultra-bg);
+      --accent: var(--ultra-accent);
+      --accent-glow: var(--ultra-glow);
+      --accent-hover: #fbbf24;
+    }
+
+    /* ── Main App Wrapper (for dragging) ─────────────────── */
+    #appWrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 10;
+      background: transparent;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      will-change: transform;
+    }
+    
+    #appWrapper.dragging {
+      transition: none;
+    }
+
+    body.ultra-active .welcome h1,
+    body.ultra-active .welcome p,
+    body.ultra-active .welcome-suggestions,
+    body.ultra-active .welcome-icon {
+      display: none;
+    }
+
+    /* ── Secret Wheel Canvas ────────────────────────────── */
+    #ultraWheelCanvas {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      width: 600px;
+      height: 600px;
+      max-width: 90vw;
+      max-height: 90vw;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    #ultraWheelCanvas.spinning {
+      opacity: 1;
+      box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    }
+
+    /* ── Fireflies Canvas ───────────────────────────────── */
+    .layer-fireflies {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    body.ultra-active .layer-fireflies {
+      opacity: 1;
     }
 
     /* ── Header ─────────────────────────────────────────── */
@@ -80,6 +151,194 @@
       padding: 3px 8px;
       border-radius: 6px;
       margin-left: 4px;
+    }
+
+    .header-actions {
+      position: absolute;
+      right: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border-input);
+      color: var(--text-secondary);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn.ultra-toggle {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: var(--ultra-accent);
+    }
+    .icon-btn.ultra-toggle:hover, .icon-btn.ultra-toggle.active {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--ultra-accent);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+    
+    /* ── Ultra Mode Header & Send Button ──────────────── */
+    .ultra-header {
+      display: none;
+      text-align: center;
+      margin-bottom: 24px;
+      animation: fadeUp 0.5s ease;
+    }
+
+    body.ultra-active .ultra-header {
+      display: block;
+    }
+
+    .ultra-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #fef3c7 0%, #f59e0b 50%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.4));
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .ultra-disclaimer {
+      color: var(--text-muted);
+      font-size: 14px;
+      max-width: 600px;
+      margin: 0 auto;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+    }
+
+    body.ultra-active #sendBtn {
+      display: none; /* Hide regular send button */
+    }
+
+    body.ultra-active .input-box {
+      padding: 16px 24px; /* More padding since button is gone */
+    }
+
+    .ultra-send-btn-wrapper {
+      display: none;
+      justify-content: center;
+      margin-top: 20px;
+      animation: fadeUp 0.5s ease;
+    }
+
+    body.ultra-active .ultra-send-btn-wrapper {
+      display: flex;
+    }
+
+    .ultra-send-btn {
+      width: 100%;
+      max-width: 300px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: var(--ultra-accent);
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .ultra-send-btn:hover:not(:disabled) {
+      background: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .ultra-send-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    body.ultra-active .input-area {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      background: transparent;
+      border-top: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      padding: 0 40px;
+      z-index: 10;
+    }
+
+    body.ultra-active .input-wrapper {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    body.ultra-active .input-box {
+      background: rgba(15, 15, 20, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 16px 16px 16px 24px;
+      align-items: center;
+    }
+
+    body.ultra-active #chatInput {
+      font-size: 15px; /* Regular size */
+      padding: 12px 0;
+      line-height: 1.4;
+      min-height: 120px;
+    }
+
+    body.ultra-active .input-disclaimer {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--accent);
+    }
+    
+    .auth-status-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-input);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 18px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .auth-status-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--accent);
+    }
+    .auth-status-btn.synced {
+      color: #a78bfa;
+      border-color: rgba(139, 92, 246, 0.4);
     }
 
     /* ── Chat Area ──────────────────────────────────────── */
@@ -161,6 +420,213 @@
       color: var(--text-primary);
       border-color: var(--accent);
       transform: translateY(-1px);
+    }
+
+    /* ── High-Tech Atom Animation (Ultra Mode) ──────────── */
+    .atom-loader {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      margin: 10px 0;
+      transform-style: preserve-3d;
+      animation: slowRotate 15s linear infinite;
+    }
+    
+    @keyframes slowRotate {
+      0% { transform: rotateY(0deg); }
+      100% { transform: rotateY(360deg); }
+    }
+
+    .atom-loader .nucleus {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 12px; height: 12px;
+      margin: -6px 0 0 -6px;
+      background: var(--ultra-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 15px var(--ultra-accent);
+      transform: translateZ(0);
+    }
+
+    .atom-loader .orbit-wrapper {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      transform-style: preserve-3d;
+    }
+    
+    .atom-loader .orbit-wrapper:nth-child(1) { transform: rotateY(0deg) rotateX(60deg); }
+    .atom-loader .orbit-wrapper:nth-child(2) { transform: rotateY(45deg) rotateX(60deg); }
+    .atom-loader .orbit-wrapper:nth-child(3) { transform: rotateY(90deg) rotateX(60deg); }
+    .atom-loader .orbit-wrapper:nth-child(4) { transform: rotateY(135deg) rotateX(60deg); }
+
+    .atom-loader .orbit {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: 1px solid rgba(245, 158, 11, 0.05); /* Hidden subtle rings */
+      border-radius: 50%;
+      animation: orbitSpin 2s linear infinite;
+      box-sizing: border-box;
+      transform-style: preserve-3d;
+    }
+
+    .atom-loader .orbit-wrapper:nth-child(2) .orbit { animation-duration: 2.1s; animation-direction: reverse; }
+    .atom-loader .orbit-wrapper:nth-child(3) .orbit { animation-duration: 1.8s; }
+    .atom-loader .orbit-wrapper:nth-child(4) .orbit { animation-duration: 2.3s; animation-direction: reverse; }
+
+    .atom-loader .orbit::before,
+    .atom-loader .orbit::after {
+      content: '';
+      position: absolute;
+      top: -3px; left: calc(50% - 3px);
+      width: 6px; height: 6px;
+      background: var(--ultra-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--ultra-accent);
+      transform: rotateX(90deg); /* keep it flat to screen theoretically, but it's a sphere so it doesn't matter */
+    }
+    
+    .atom-loader .orbit::before {
+      top: -3px; left: calc(50% - 3px);
+    }
+    
+    .atom-loader .orbit::after {
+      bottom: -3px; left: calc(50% - 3px);
+    }
+
+    @keyframes orbitSpin {
+      0% { transform: rotateZ(0deg); }
+      100% { transform: rotateZ(360deg); }
+    }
+
+    /* ── Ultra Spin Scene (Full Screen) ─────────────────── */
+    .ultra-spin-scene {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: var(--ultra-bg);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      will-change: transform;
+    }
+
+    .ultra-spin-scene.dragging {
+      transition: none;
+    }
+
+    body.ultra-spinning .ultra-spin-scene {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    body.ultra-spinning #appWrapper,
+    body.ultra-spinning .input-area,
+    body.ultra-spinning .input-disclaimer,
+    body.ultra-spinning .header {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease;
+    }
+
+    /* Make atom loader larger for full screen */
+    .ultra-spin-scene .atom-loader {
+      width: 320px;
+      height: 320px;
+      margin-bottom: 60px;
+    }
+    .ultra-spin-scene .nucleus {
+      display: none;
+    }
+    .ultra-spin-scene .orbit {
+      border: 1px solid rgba(245, 158, 11, 0.4); /* Clearer rings */
+    }
+    .ultra-spin-scene .orbit::before,
+    .ultra-spin-scene .orbit::after {
+      width: 6px; height: 6px;
+      left: calc(50% - 3px);
+      background: var(--ultra-accent);
+      box-shadow: 0 0 10px var(--ultra-accent);
+      border-radius: 50%;
+    }
+    .ultra-spin-scene .orbit::before { top: -3px; }
+    .ultra-spin-scene .orbit::after { bottom: -3px; }
+
+    /* Fix header pointer events during spin */
+    body.ultra-spinning .header { display: none; }
+    /* ── Typewriter Result Overlay ──────────────────────── */
+    .ultra-result-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: #000;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease;
+    }
+    
+    .ultra-result-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .typewriter-text {
+      color: #fff;
+      font-size: 36px;
+      font-weight: 700;
+      font-family: 'Courier New', Courier, monospace;
+      text-align: center;
+      max-width: 800px;
+      line-height: 1.4;
+      text-shadow: 0 0 20px rgba(255,255,255,0.5);
+    }
+
+    .typewriter-cursor {
+      display: inline-block;
+      width: 15px;
+      height: 40px;
+      background: #fff;
+      margin-left: 5px;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+    
+    .ultra-close-btn {
+      margin-top: 40px;
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 12px 24px;
+      font-family: inherit;
+      font-size: 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.3s;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .ultra-close-btn.show {
+      opacity: 1;
+    }
+
+    .ultra-close-btn:hover {
+      border-color: #fff;
+      background: rgba(255,255,255,0.1);
     }
 
     /* ── Messages ───────────────────────────────────────── */
@@ -255,6 +721,12 @@
       border-radius: 10px;
       animation: fadeUp 0.3s ease-out;
       max-width: 380px;
+      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    }
+
+    .thinking-tip.fade-out {
+      opacity: 0;
+      transform: translateY(12px);
     }
 
     .thinking-tip::before {
@@ -332,10 +804,14 @@
     }
 
     .input-disclaimer {
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      width: 100%;
       text-align: center;
       font-size: 11px;
       color: var(--text-muted);
-      margin-top: 10px;
+      z-index: 5;
     }
 
     /* ── Animations ─────────────────────────────────────── */
@@ -352,6 +828,92 @@
     @keyframes pulse {
       0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
       40% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Auth Modal ─────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      z-index: 10000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 90%;
+      max-width: 360px;
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      animation: fadeUp 0.3s ease-out;
+      text-align: center;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: none; border: none;
+      color: var(--text-secondary);
+      font-size: 24px; cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: var(--text-primary); }
+
+    .modal-content h2 { margin-bottom: 8px; font-size: 20px; }
+    .modal-content p { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; line-height: 1.5; }
+
+    .modal-input {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-input);
+      color: var(--text-primary);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      font-family: inherit;
+    }
+
+    .modal-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .modal-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    .modal-btn:hover { background: var(--accent-hover); }
+
+    .modal-btn.danger {
+      background: transparent;
+      border: 1px solid rgba(226, 27, 60, 0.4);
+      color: #e21b3c;
+    }
+    .modal-btn.danger:hover {
+      background: rgba(226, 27, 60, 0.1);
+    }
+
+    .modal-error {
+      color: #fb7185;
+      font-size: 12px;
+      margin-bottom: 12px;
+      display: none;
     }
 
     /* ── Responsive ─────────────────────────────────────── */
@@ -374,9 +936,35 @@
       <span class="header-title">Bark AI</span>
       <span class="header-badge">✨</span>
     </div>
+    <div class="header-actions">
+      <button class="icon-btn ultra-toggle" id="ultraToggleBtn" title="Ultra Thinking Mode" onclick="toggleUltraMode()">⚡</button>
+      <button class="icon-btn" id="newChatBtn" title="New Chat" onclick="startNewChat()">✏️</button>
+      <button class="auth-status-btn" id="authBtn" onclick="toggleAuthModal()">☁️ Offline</button>
+    </div>
   </div>
 
-  <!-- Chat Area -->
+  <!-- Background Wheel Canvas (Ultra Mode) -->
+  <canvas id="ultraWheelCanvas"></canvas>
+
+  <!-- Fireflies Background -->
+  <canvas id="ultraFireflies" class="layer-fireflies"></canvas>
+
+  <!-- Full Screen Spin Scene -->
+  <div id="ultraSpinScene" class="ultra-spin-scene">
+    <div class="atom-loader">
+      <div class="orbit-wrapper"><div class="orbit"></div></div>
+      <div class="orbit-wrapper"><div class="orbit"></div></div>
+      <div class="orbit-wrapper"><div class="orbit"></div></div>
+      <div class="orbit-wrapper"><div class="orbit"></div></div>
+      <div class="nucleus"></div>
+    </div>
+    <div class="thinking-tip-container" id="ultraTipsContainer" style="color: var(--ultra-accent); font-size: 18px; font-weight: 500; letter-spacing: 1px; margin-bottom: 20px; text-align: center; height: 30px; animation: pulse 2s infinite;">
+      Allocating Megawatt Neural Spin...
+    </div>
+  </div>
+
+  <div id="appWrapper">
+    <!-- Chat Area -->
   <div class="chat-area" id="chatArea">
     <div class="chat-container" id="chatContainer">
       <!-- Welcome screen (hidden after first message) -->
@@ -397,6 +985,11 @@
   <!-- Input Area -->
   <div class="input-area">
     <div class="input-wrapper">
+      <div class="ultra-header" id="ultraHeader">
+        <div class="ultra-title">Ultra Mode</div>
+        <div class="ultra-disclaimer">Ultra Thinking Mode will use megawatts of neural energy to create the ultimate answer for your problem. Ensure your query is written in extreme detail.</div>
+      </div>
+      
       <div class="input-box">
         <textarea
           id="chatInput"
@@ -408,28 +1001,356 @@
           &#8593;
         </button>
       </div>
-      <div class="input-disclaimer">
-        Bark AI can make mistakes. Please don't feed it chocolate.
+
+      <div class="ultra-send-btn-wrapper">
+        <button id="ultraSendBtn" class="ultra-send-btn" disabled>Think Deeply</button>
       </div>
     </div>
   </div>
 
-  <script>
-    const API_URL = '/api/chat';
+  <div class="input-disclaimer" id="globalDisclaimer">
+    Bark AI can make mistakes. Please don't feed it chocolate.
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="toggleAuthModal()">&times;</button>
+      
+      <div id="loginView">
+        <h2>Cloud Sync</h2>
+        <p>Log in with your Beagle Games account to save your chat history across devices.</p>
+        <input type="text" id="authUser" class="modal-input" placeholder="Beagle Username">
+        <input type="password" id="authPass" class="modal-input" placeholder="Password / PIN">
+        <div id="authError" class="modal-error"></div>
+        <button class="modal-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">SIGN IN / REGISTER</button>
+      </div>
+
+      <div id="loggedInView" style="display: none;">
+        <div style="font-size: 48px; margin-bottom: 16px;">☁️</div>
+        <h2 id="profileName">Username</h2>
+        <p style="color: #a78bfa; font-weight: 500;">Status: Cloud Synced ✅</p>
+        <button class="modal-btn danger" onclick="handleLogout()">LOG OUT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Ultra Result Overlay -->
+  <div class="ultra-result-overlay" id="ultraResultOverlay">
+    <div>
+      <span class="typewriter-text" id="ultraResultText"></span><span class="typewriter-cursor"></span>
+    </div>
+    <button class="ultra-close-btn" id="ultraCloseBtn" onclick="closeUltraResult()">Return to Reality</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // --- FIREBASE CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBCfMO_rgKi3HE_1JnLQfH_oc23BbFlw4",
+      authDomain: "beagle-games.firebaseapp.com",
+      projectId: "beagle-games",
+      storageBucket: "beagle-games.firebasestorage.app",
+      messagingSenderId: "618580703353",
+      appId: "1:618580703353:web:d5dc9f4df350691a5afca8",
+      measurementId: "G-PGWRK3MQZ2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const DUMMY_DOMAIN = "@beagle.local";
+    let currentUser = null;
+
+    // --- DOM Elements ---
+    const API_URL = 'https://bark-ai.onrender.com/api/chat';
 
     const chatArea = document.getElementById('chatArea');
     const chatContainer = document.getElementById('chatContainer');
     const welcome = document.getElementById('welcome');
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
-
+    const appWrapper = document.getElementById('appWrapper');
+    const ultraToggleBtn = document.getElementById('ultraToggleBtn');
+    
+    // Audio Context (created on user interaction)
+    let audioCtx = null;
+    let ultraModeActive = false;
     let isWaiting = false;
+    let chatMessages = []; 
+
+    // --- Fireflies Ambient Effect ---
+    const ffCanvas = document.getElementById('ultraFireflies');
+    const ffCtx = ffCanvas.getContext('2d');
+    let fireflies = [];
+    
+    function resizeFF() {
+      ffCanvas.width = window.innerWidth;
+      ffCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeFF);
+    resizeFF();
+
+    for(let i=0; i<120; i++) {
+      fireflies.push({
+        x: Math.random() * ffCanvas.width,
+        y: Math.random() * ffCanvas.height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        size: Math.random() * 1.5 + 0.5,
+        life: Math.random() * Math.PI * 2
+      });
+    }
+
+    function animateFF() {
+      if(ultraModeActive) {
+        ffCtx.clearRect(0, 0, ffCanvas.width, ffCanvas.height);
+        
+        const cx = ffCanvas.width / 2;
+        const cy = ffCanvas.height / 2;
+        
+        fireflies.forEach(f => {
+          f.x += f.vx;
+          f.y += f.vy;
+          f.life += 0.02;
+          
+          if(f.x < 0) f.x = ffCanvas.width;
+          if(f.x > ffCanvas.width) f.x = 0;
+          if(f.y < 0) f.y = ffCanvas.height;
+          if(f.y > ffCanvas.height) f.y = 0;
+          
+          let alpha = (Math.sin(f.life) + 1) / 2 * 0.35 + 0.05; // Lower opacity
+          
+          // Fade out in the center
+          const dx = f.x - cx;
+          const dy = f.y - cy;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          const deadZone = 350;
+          if(dist < deadZone) {
+            alpha *= (dist / deadZone);
+          }
+          
+          ffCtx.beginPath();
+          ffCtx.arc(f.x, f.y, f.size, 0, Math.PI*2);
+          ffCtx.fillStyle = `rgba(245, 158, 11, ${alpha})`;
+          ffCtx.shadowBlur = 8;
+          ffCtx.shadowColor = `rgba(245, 158, 11, ${alpha})`;
+          ffCtx.fill();
+        });
+      }
+      requestAnimationFrame(animateFF);
+    }
+    animateFF();
+
+    // ── Authentication ────────────────────────────────────
+    window.toggleAuthModal = function() {
+      const modal = document.getElementById('authModal');
+      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+      if (modal.style.display === 'flex') {
+        document.getElementById('authError').style.display = 'none';
+        if (!currentUser) document.getElementById('authUser').focus();
+      }
+    };
+
+    window.handleAuthSubmit = async function() {
+      const u = document.getElementById('authUser').value.trim().toLowerCase();
+      const p = document.getElementById('authPass').value;
+      const errorEl = document.getElementById('authError');
+      const btn = document.getElementById('authSubmitBtn');
+      
+      if (!u || !p) {
+        errorEl.textContent = "Please enter both username and password.";
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      const email = u + DUMMY_DOMAIN;
+      btn.textContent = "CONNECTING...";
+      errorEl.style.display = 'none';
+
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        try {
+          await signInWithEmailAndPassword(auth, email, p);
+        } catch (err) {
+          if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            const userCred = await createUserWithEmailAndPassword(auth, email, p);
+            await setDoc(doc(db, "users", userCred.user.uid), { displayName: u, createdAt: new Date() });
+          } else {
+            throw err;
+          }
+        }
+        toggleAuthModal();
+      } catch (err) {
+        let msg = "Error logging in: " + err.message;
+        if (err.code === 'auth/weak-password') msg = "Password must be at least 6 characters.";
+        if (err.code === 'auth/email-already-in-use') msg = "Username taken or wrong password.";
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+      } finally {
+        btn.textContent = "SIGN IN / REGISTER";
+      }
+    };
+
+    window.handleLogout = async function() {
+      await signOut(auth);
+      toggleAuthModal();
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      const authBtn = document.getElementById('authBtn');
+      const loginView = document.getElementById('loginView');
+      const loggedInView = document.getElementById('loggedInView');
+
+      if (user) {
+        const username = user.email.replace(DUMMY_DOMAIN, '');
+        authBtn.innerHTML = `☁️ Synced: ${username}`;
+        authBtn.classList.add('synced');
+        loginView.style.display = 'none';
+        loggedInView.style.display = 'block';
+        document.getElementById('profileName').textContent = username;
+        
+        // Logged in -> try to load cloud history
+        await loadHistory();
+      } else {
+        authBtn.innerHTML = `☁️ Offline`;
+        authBtn.classList.remove('synced');
+        loginView.style.display = 'block';
+        loggedInView.style.display = 'none';
+        
+        // Logged out -> load local history
+        await loadHistory();
+      }
+    });
+
+    // ── Sync / History Manager ────────────────────────────
+    const LOCAL_KEY = 'barkai_history_v2';
+    const CLOUD_DOC = 'bark_chat';
+
+    async function loadHistory() {
+      // 1. Check local
+      let localData = null;
+      try {
+        const raw = localStorage.getItem(LOCAL_KEY);
+        if (raw) localData = JSON.parse(raw);
+      } catch(e) {}
+
+      // 2. Fetch cloud if logged in
+      let useData = localData || { messages: [], _cloudLastUpdated: 0 };
+      
+      if (currentUser) {
+        try {
+          const snap = await getDoc(doc(db, "users", currentUser.uid, "saves", CLOUD_DOC));
+          if (snap.exists()) {
+            const cloudData = snap.data();
+            const cloudTime = cloudData._cloudLastUpdated || 0;
+            const localTime = useData._cloudLastUpdated || 0;
+            
+            if (cloudTime > localTime) {
+              useData = cloudData;
+              localStorage.setItem(LOCAL_KEY, JSON.stringify(useData));
+            }
+          } else if (localData && localData.messages.length > 0) {
+            // Push local to cloud for the first time
+            await triggerSave(localData);
+          }
+        } catch(e) {
+          console.error("Cloud load error", e);
+        }
+      }
+
+      chatMessages = useData.messages || [];
+      renderHistory();
+    }
+
+    async function triggerSave(dataObj = null) {
+      const dataToSave = dataObj || {
+        messages: chatMessages,
+        _cloudLastUpdated: Date.now()
+      };
+      
+      // Save local
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(dataToSave));
+
+      // Save cloud
+      if (currentUser) {
+        try {
+          await setDoc(doc(db, "users", currentUser.uid, "saves", CLOUD_DOC), dataToSave);
+        } catch(e) { console.error("Cloud save err", e); }
+      }
+    }
+
+    function renderHistory() {
+      // Clear current chat display but leave the welcome initially hidden
+      const msgs = chatContainer.querySelectorAll('.message');
+      msgs.forEach(m => m.remove());
+
+      if (chatMessages.length === 0) {
+        if (welcome) welcome.style.display = 'flex';
+      } else {
+        if (welcome) welcome.style.display = 'none';
+        chatMessages.forEach(msg => appendMessageDOM(msg.role, msg.text));
+      }
+      scrollToBottom();
+    }
+
+    // ── Ultra Mode UI Toggle ──────────────────────────────
+    window.toggleUltraMode = function() {
+      ultraModeActive = !ultraModeActive;
+      
+      if (ultraModeActive) {
+        document.body.classList.add('ultra-active');
+        ultraToggleBtn.classList.add('active');
+        chatInput.placeholder = "Enter your complex problem for Ultra Processing...";
+        
+        // Hide chat history to force them to focus on the big input
+        const msgs = chatContainer.querySelectorAll('.message');
+        msgs.forEach(m => m.style.display = 'none');
+        if (welcome) welcome.style.display = 'flex';
+        
+      } else {
+        document.body.classList.remove('ultra-active');
+        ultraToggleBtn.classList.remove('active');
+        chatInput.placeholder = "Message Bark AI…";
+        renderHistory(); // restore standard view
+      }
+
+      // Initialize audio context on first interaction if possible
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+      }
+    };
+
+    window.closeUltraResult = function() {
+      document.getElementById('ultraResultOverlay').classList.remove('show');
+      document.getElementById('ultraResultText').innerHTML = '';
+      document.getElementById('ultraCloseBtn').classList.remove('show');
+      
+      // Reset UI back to normal after a joke response
+      startNewChat(true); // silent clear
+      toggleUltraMode();  // Turn off ultra mode
+      isWaiting = false;  // Reset waiting state so they can do it again
+    };
+
+    window.startNewChat = async function(silent = false) {
+      if (!silent && !confirm("Are you sure you want to clear this conversation?")) return;
+      chatMessages = [];
+      await triggerSave();
+      renderHistory();
+    };
 
     // ── Auto-resize textarea ──────────────────────────────
     chatInput.addEventListener('input', () => {
       chatInput.style.height = 'auto';
       chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
-      sendBtn.disabled = chatInput.value.trim().length === 0 || isWaiting;
+      
+      const isDisabled = chatInput.value.trim().length === 0 || isWaiting;
+      sendBtn.disabled = isDisabled;
+      document.getElementById('ultraSendBtn').disabled = isDisabled;
     });
 
     // ── Enter to send (Shift+Enter for newline) ──────────
@@ -441,28 +1362,41 @@
     });
 
     sendBtn.addEventListener('click', handleSend);
+    document.getElementById('ultraSendBtn').addEventListener('click', handleSend);
 
-    // ── Suggestion chips ──────────────────────────────────
-    function sendSuggestion(chip) {
+    window.sendSuggestion = function(chip) {
       chatInput.value = chip.textContent;
       handleSend();
-    }
+    };
 
     // ── Send a message ────────────────────────────────────
+    const POLL_INTERVAL = 3000; // poll every 3 seconds
+    let pollTimer = null;
+
     async function handleSend() {
       const prompt = chatInput.value.trim();
       if (!prompt || isWaiting) return;
 
+      if (ultraModeActive) {
+        handleUltraSend(prompt);
+        return;
+      }
+
       // Hide welcome screen
       if (welcome) welcome.style.display = 'none';
 
-      // Add user message
-      appendMessage('user', prompt);
+      // Update state
+      chatMessages.push({ role: 'user', text: prompt });
+      triggerSave();
+
+      // Add user message to DOM
+      appendMessageDOM('user', prompt);
 
       // Clear input
       chatInput.value = '';
       chatInput.style.height = 'auto';
       sendBtn.disabled = true;
+      document.getElementById('ultraSendBtn').disabled = true;
       isWaiting = true;
 
       // Show thinking indicator
@@ -478,28 +1412,101 @@
 
         const data = await res.json();
 
-        // Remove thinking indicator
-        thinkingEl.remove();
-
-        if (data.timedOut) {
-          appendMessage('assistant', data.response || 'The beagles seem to be napping… try again later! 🐾');
-        } else {
-          appendMessage('assistant', data.response);
+        if (!data.taskId) {
+          throw new Error('No task ID returned');
         }
+
+        // Save to localStorage so it survives tab close/refresh
+        localStorage.setItem('barkai_pending', JSON.stringify({
+          taskId: data.taskId,
+          prompt,
+        }));
+
+        // Start polling for the response
+        startPolling(data.taskId, thinkingEl);
+
       } catch (err) {
         thinkingEl.remove();
-        appendMessage('assistant', 'Woof… something went wrong. The beagles tripped over a network cable. 🐕');
+        clearThinkingTips();
+        appendMessageDOM('assistant', 'Woof… something went wrong. The beagles tripped over a network cable. 🐕');
+        isWaiting = false;
+        sendBtn.disabled = chatInput.value.trim().length === 0;
+        scrollToBottom();
       }
-
-      isWaiting = false;
-      clearThinkingTips();
-      sendBtn.disabled = chatInput.value.trim().length === 0;
-      chatInput.focus();
-      scrollToBottom();
     }
 
-    // ── Append a message to the chat ──────────────────────
-    function appendMessage(role, text) {
+    function startPolling(taskId, thinkingEl) {
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_URL}/${taskId}`);
+          const data = await res.json();
+
+          if (data.status === 'resolved') {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            localStorage.removeItem('barkai_pending');
+            thinkingEl.remove();
+            clearThinkingTips();
+            
+            chatMessages.push({ role: 'assistant', text: data.response });
+            triggerSave();
+            appendMessageDOM('assistant', data.response);
+            
+            isWaiting = false;
+            sendBtn.disabled = chatInput.value.trim().length === 0;
+            chatInput.focus();
+            scrollToBottom();
+          } else if (data.status === 'not_found') {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            localStorage.removeItem('barkai_pending');
+            thinkingEl.remove();
+            clearThinkingTips();
+
+            const fallbackReply = 'The beagles lost track of your question. Please try again! 🐾';
+            chatMessages.push({ role: 'assistant', text: fallbackReply });
+            triggerSave();
+            appendMessageDOM('assistant', fallbackReply);
+            
+            isWaiting = false;
+            sendBtn.disabled = chatInput.value.trim().length === 0;
+            scrollToBottom();
+          }
+          // status === 'pending' → keep polling
+        } catch {
+          // Network hiccup, keep trying
+        }
+      }, POLL_INTERVAL);
+    }
+
+    // ── Resume polling on page load if there was a pending task ──
+    (function resumePending() {
+      const saved = localStorage.getItem('barkai_pending');
+      if (!saved) return;
+      try {
+        const { taskId, prompt } = JSON.parse(saved);
+        if (!taskId) return;
+
+        if (welcome) welcome.style.display = 'none';
+        // Ensure the pending prompt is in the history if it isn't already (edge case)
+        if (chatMessages.length === 0 || chatMessages[chatMessages.length - 1].text !== prompt) {
+            chatMessages.push({ role: 'user', text: prompt });
+            renderHistory();
+        }
+
+        const thinkingEl = appendThinking();
+        isWaiting = true;
+        sendBtn.disabled = true;
+        scrollToBottom();
+
+        startPolling(taskId, thinkingEl);
+      } catch {
+        localStorage.removeItem('barkai_pending');
+      }
+    })();
+
+    // ── Append a message to the chat (DOM only) ───────────
+    function appendMessageDOM(role, text) {
       const msg = document.createElement('div');
       msg.className = `message ${role}`;
 
@@ -535,7 +1542,34 @@
     let tipTimer = null;
     let tipIndex = 0;
 
+    function startUltraTips() {
+      const tips = [
+        "Allocating 400 megawatts of neural energy...",
+        "Querying the cosmic consciousness...",
+        "Bypassing standard logical constraints...",
+        "Synthesizing multidimensional variables...",
+        "Thinking extremely deeply...",
+        "Consulting the ancient beagle texts...",
+        "Reticulating splines at lightspeed...",
+        "Harnessing dark matter for processing power..."
+      ];
+      const container = document.getElementById('ultraTipsContainer');
+      let i = 0;
+      
+      const showNext = () => {
+        container.style.opacity = 0;
+        setTimeout(() => {
+          container.innerText = tips[i];
+          container.style.opacity = 1;
+          i = (i + 1) % tips.length;
+        }, 500);
+      };
+      
+      window.ultraTipTimer = setInterval(showNext, 4000);
+    }
+
     function appendThinking() {
+
       const msg = document.createElement('div');
       msg.className = 'message assistant';
       msg.innerHTML = `
@@ -563,6 +1597,19 @@
         tipContainer.innerHTML = `<div class="thinking-tip">${thinkingTips[tipIndex]}</div>`;
         tipIndex = (tipIndex + 1) % thinkingTips.length;
         scrollToBottom();
+
+        // Make the tip clear out after 4 seconds
+        setTimeout(() => {
+          const activeTip = tipContainer.querySelector('.thinking-tip');
+          if (activeTip) {
+            activeTip.classList.add('fade-out');
+            setTimeout(() => {
+              if (tipContainer.querySelector('.thinking-tip') === activeTip) {
+                tipContainer.innerHTML = '';
+              }
+            }, 300); // Wait for the transition to finish
+          }
+        }, 3700); // 3.7s + 0.3s fade out = 4.0s total
       };
 
       tipTimer = setTimeout(() => {
@@ -571,6 +1618,338 @@
       }, 8000);
 
       return msg;
+    }
+
+    // ── Ultra Mode Special Animations ─────────────────────
+
+    async function handleUltraSend(prompt) {
+      document.body.classList.add('ultra-spinning');
+      
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      sendBtn.disabled = true;
+      document.getElementById('ultraSendBtn').disabled = true;
+      isWaiting = true;
+      
+      // Initialize the wheel with dynamic wedges based on the prompt
+      initUltraWheel(prompt);
+      
+      // Start ultra tips
+      startUltraTips();
+
+      // Start the fake "backend" process which is actually just the wheel spinning
+      await startUltraSpinProcess();
+    }
+
+    // --- Wheel State & Audio Physics ---
+    let wheelCtx = null;
+    let wheelCanvas = null;
+    let wheelOptions = [];
+    let currentAngle = 0;
+    let spinVelocity = 0;
+    let isSpinning = false;
+    let winningText = "";
+
+    function playTick() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+      
+      // Volume scales based on how far down the wrapper is dragged
+      const maxDragY = window.innerHeight * 0.7;
+      let vol = Math.min(Math.max(currentDragY / maxDragY, 0.05), 1);
+      
+      gain.gain.setValueAtTime(vol * 0.8, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    // --- Interactive Drag Physics ---
+    let isDragging = false;
+    let startY = 0;
+    let currentDragY = 0;
+    let isUltraDragging = false;
+
+    window.addEventListener('pointerdown', (e) => {
+      // Don't drag if auth modal is open
+      if (document.getElementById('authModal').style.display === 'flex') return;
+      if (document.getElementById('ultraResultOverlay').classList.contains('show')) return;
+      
+      isDragging = true;
+      startY = e.clientY;
+      
+      if (document.body.classList.contains('ultra-spinning')) {
+        isUltraDragging = true;
+        document.getElementById('ultraSpinScene').classList.add('dragging');
+      } else {
+        isUltraDragging = false;
+        appWrapper.classList.add('dragging');
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      currentDragY = Math.max(0, e.clientY - startY); // Only drag down
+      const resistY = currentDragY > window.innerHeight * 0.8 ? window.innerHeight * 0.8 + (currentDragY - window.innerHeight * 0.8) * 0.2 : currentDragY;
+      
+      if (isUltraDragging) {
+        document.getElementById('ultraSpinScene').style.transform = `translateY(${resistY}px)`;
+      } else {
+        appWrapper.style.transform = `translateY(${resistY}px)`;
+      }
+      
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      
+      if (isUltraDragging) {
+        document.getElementById('ultraSpinScene').classList.remove('dragging');
+        document.getElementById('ultraSpinScene').style.transform = `translateY(0)`;
+        isUltraDragging = false;
+      } else {
+        appWrapper.classList.remove('dragging');
+        appWrapper.style.transform = `translateY(0)`;
+      }
+      currentDragY = 0;
+    });
+
+    // --- Wheel Logic ---
+    function initUltraWheel(prompt) {
+       wheelCanvas = document.getElementById('ultraWheelCanvas');
+       wheelCtx = wheelCanvas.getContext('2d');
+       wheelCanvas.width = 800;
+       wheelCanvas.height = 800;
+       
+       const p = prompt.toLowerCase();
+       wheelOptions = ["idk man"];
+       
+       if (p.includes('math') || p.includes('calculate') || p.includes('number')) {
+         wheelOptions.push("42", "Math is hard, let's go shopping.", "Divide by zero error.");
+       }
+       if (p.includes('how')) {
+         wheelOptions.push("Have you tried turning it off and on?", "Google it.", "Magic. Pure magic.");
+       }
+       if (p.includes('code') || p.includes('bug') || p.includes('fix')) {
+         wheelOptions.push("It works on my machine.", "Just rewrite it in Rust.", "Blame the compiler.");
+       }
+       if (p.includes('why')) {
+         wheelOptions.push("Because I said so.", "It's a feature, not a bug.", "Classified Bark AI secret.");
+       }
+       
+       const isAMatch = prompt.match(/^is\s+(.+?)\s+an?\s+(.+?)\??$/i);
+       const isMatch = prompt.match(/^is\s+(.+?)\s+(.+?)\??$/i);
+       const areMatch = prompt.match(/^are\s+(.+?)\s+(.+?)\??$/i);
+       
+       if (isAMatch) {
+         const A = isAMatch[1];
+         const B = isAMatch[2];
+         wheelOptions.push(`Yes, ${A} is definitively a ${B}.`, `Are you kidding? ${A} is NOT a ${B}.`, `Everyone already knows ${A} is a ${B}.`, `Without a doubt.`);
+       } else if (isMatch) {
+         const A = isMatch[1];
+         const B = isMatch[2];
+         wheelOptions.push(`Yes, ${A} is definitively ${B}.`, `Are you kidding? ${A} is NOT ${B}.`, `Everyone already knows ${A} is ${B}.`, `No way in hell.`);
+       } else if (areMatch) {
+         const A = areMatch[1];
+         const B = areMatch[2];
+         wheelOptions.push(`Yes, ${A} are definitively ${B}.`, `Are you kidding? ${A} are NOT ${B}.`, `Everyone already knows ${A} are ${B}.`, `Absolutely not.`);
+       } else if (p.startsWith('is ') || p.startsWith('are ') || p.startsWith('am ') || p.startsWith('can ') || p.startsWith('will ') || p.startsWith('do ') || p.startsWith('does ') || p.startsWith('should ') || p.startsWith('would ')) {
+         wheelOptions.push("Yes.", "No.", "Absolutely not.", "Without a doubt.");
+       }
+       
+       const generics = [
+         "Ask again later.", "Outlook not so good.", "Definitely.", 
+         "I'm just a dog on the internet.", "Bark.", "Try offering a treat.", "Error 404: Answer not found."
+       ];
+       
+       // Try to pull interesting words from the prompt
+       const stopWords = new Set(["a", "an", "the", "and", "or", "but", "is", "are", "was", "were", "be", "being", "been", "am", "i", "me", "my", "mine", "you", "your", "yours", "we", "us", "our", "ours", "he", "him", "his", "she", "her", "hers", "it", "its", "they", "them", "their", "theirs", "what", "who", "where", "when", "why", "how", "this", "that", "these", "those", "can", "could", "will", "would", "do", "does", "did", "to", "in", "for", "on", "with", "at", "by", "from", "about", "into", "through", "over", "of", "some"]);
+       
+       const words = p.replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+       
+       // If we found some interesting words, generate 1-2 custom options using them
+       if (words.length > 0) {
+         // Shuffle words
+         const shuffledWords = [...words].sort(() => Math.random() - 0.5);
+         // Grab first word
+         const w1 = shuffledWords[0];
+         const capitalizedW1 = w1.charAt(0).toUpperCase() + w1.slice(1);
+         
+         if (Math.random() > 0.3) wheelOptions.push(`I honestly know nothing about ${w1}.`);
+         if (Math.random() > 0.3) wheelOptions.push(`${capitalizedW1}? Never heard of it.`);
+         if (shuffledWords.length > 1 && Math.random() > 0.5) {
+            const w2 = shuffledWords[1];
+            wheelOptions.push(`Why worry about ${w1} when you could have ${w2}?`);
+         }
+       }
+       
+       while (wheelOptions.length < 8) {
+         wheelOptions.push(generics.splice(Math.floor(Math.random()*generics.length), 1)[0]);
+       }
+       
+       // Ensure exactly 8 slices if we accidentally went over
+       wheelOptions = wheelOptions.slice(0, 8);
+       
+       wheelOptions.sort(() => Math.random() - 0.5);
+       currentAngle = 0;
+       drawWheel();
+    }
+
+    function drawWheel() {
+      if (!wheelCtx) return;
+      const ctx = wheelCtx;
+      const cx = 400, cy = 400, r = 380;
+      const slice = (Math.PI * 2) / wheelOptions.length;
+      
+      ctx.clearRect(0, 0, 800, 800);
+      
+      for (let i = 0; i < wheelOptions.length; i++) {
+        const startAngle = currentAngle + i * slice;
+        const endAngle = startAngle + slice;
+        
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.closePath();
+        
+        ctx.fillStyle = i % 2 === 0 ? '#111116' : '#1a1a24';
+        if (wheelOptions[i] === "idk man") ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#333';
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(startAngle + slice / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = wheelOptions[i] === "idk man" ? '#000' : '#fff';
+        ctx.font = 'bold 24px Inter';
+        ctx.fillText(wheelOptions[i], r - 30, 8);
+        ctx.restore();
+      }
+      
+      ctx.beginPath();
+      ctx.arc(cx, cy, 40, 0, Math.PI*2);
+      ctx.fillStyle = '#050510';
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(cx, 0); // Pointer drawn at the very top (90 degrees off)
+      ctx.lineTo(cx - 20, 40);
+      ctx.lineTo(cx + 20, 40);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fill();
+    }
+
+    async function startUltraSpinProcess() {
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      
+      // Delay wheel appearance so it doesn't bleed through the orbital fade-in overlay
+      setTimeout(() => {
+        wheelCanvas.classList.add('spinning');
+      }, 1000);
+      
+      isSpinning = true;
+      spinVelocity = Math.random() * 0.15 + 0.35; 
+      let lastTickAngle = 0;
+      const slice = (Math.PI * 2) / wheelOptions.length;
+
+      return new Promise(resolve => {
+        function animate() {
+          currentAngle += spinVelocity;
+          
+          const normalizedAngle = currentAngle % (Math.PI * 2);
+          if (Math.abs(normalizedAngle - lastTickAngle) > slice) {
+             playTick();
+             lastTickAngle = normalizedAngle - (normalizedAngle % slice);
+          }
+          
+          drawWheel();
+          spinVelocity *= 0.993; // Friction
+          
+          if (spinVelocity > 0.002) {
+            requestAnimationFrame(animate);
+          } else {
+            isSpinning = false;
+            
+            // Pointer is visually at top (Math.PI / 2 off from drawing origin)
+            // Determine winner by reversing angle
+            const pointerAngle = (Math.PI * 1.5) - (currentAngle % (Math.PI * 2));
+            const finalAngle = pointerAngle < 0 ? pointerAngle + Math.PI*2 : pointerAngle;
+            const winningIndex = Math.floor(finalAngle / slice);
+            
+            winningText = wheelOptions[winningIndex];
+            
+            // Cleanup visually
+            clearInterval(window.ultraTipTimer);
+            
+            setTimeout(() => {
+               showTypewriterResult(winningText);
+               resolve();
+            }, 300);
+            
+            // Delay removing the spin states so the wheel stays hidden under the black result overlay
+            setTimeout(() => {
+               document.body.classList.remove('ultra-spinning');
+               wheelCanvas.classList.remove('spinning');
+            }, 1300);
+          }
+        }
+        animate();
+      });
+    }
+
+    function showTypewriterResult(text) {
+      const overlay = document.getElementById('ultraResultOverlay');
+      const textEl = document.getElementById('ultraResultText');
+      const closeBtn = document.getElementById('ultraCloseBtn');
+      
+      overlay.classList.add('show');
+      textEl.innerHTML = '';
+      closeBtn.classList.remove('show');
+      
+      let i = 0;
+      const speed = 70; 
+      
+      function typeWriter() {
+        if (i < text.length) {
+          textEl.innerHTML += text.charAt(i);
+          i++;
+          
+          if (audioCtx && i % 2 === 0) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+          }
+          
+          setTimeout(typeWriter, speed);
+        } else {
+          setTimeout(() => closeBtn.classList.add('show'), 1500);
+        }
+      }
+      
+      setTimeout(typeWriter, 1000);
     }
 
     function clearThinkingTips() {
