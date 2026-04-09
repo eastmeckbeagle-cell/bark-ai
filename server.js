@@ -51,7 +51,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // POST /api/chat — submit a prompt, returns immediately with a taskId
 app.post('/api/chat', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, username, userId } = req.body;
 
   if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
     return res.status(400).json({ error: 'A non-empty "prompt" string is required.' });
@@ -76,6 +76,7 @@ app.post('/api/chat', async (req, res) => {
   // Store the task — no res object needed anymore
   pendingChats.set(taskId, {
     prompt: prompt.trim(),
+    username: username || 'Guest',
     timestamp: Date.now(),
     timer,
     webhookMsgId: null,
@@ -93,6 +94,7 @@ app.post('/api/chat', async (req, res) => {
       content: [
         `**📨 New Bark AI prompt!**`,
         `> **Task ID:** \`${taskId}\``,
+        `> **User:** \`${username || 'Guest'}\` (${userId || 'anonymous'})`,
         `> **Prompt:** ${prompt.trim()}`,
         ``,
         `💬 **Reply to this message** or use \`/bark task_id:${taskId} response:...\``,
@@ -129,6 +131,44 @@ app.get('/api/chat/:taskId', (req, res) => {
   }
 
   res.json({ status: 'pending' });
+});
+
+// POST /api/chat/:taskId/recall — notify Discord that the task was resolved via memory recall
+app.post('/api/chat/:taskId/recall', async (req, res) => {
+  const taskId = parseInt(req.params.taskId, 10);
+
+  if (!pendingChats.has(taskId)) {
+    return res.json({ ok: true, note: 'task_not_found' });
+  }
+
+  const entry = pendingChats.get(taskId);
+
+  // Resolve the task server-side so staff know not to reply
+  if (!entry.resolved) {
+    clearTimeout(entry.timer);
+    entry.response = '[Resolved via memory recall]';
+    entry.resolved = true;
+  }
+
+  // Send a follow-up to Discord
+  try {
+    await webhook.send({
+      username: 'Bark AI 🐾',
+      content: [
+        `**✅ Task ${taskId} auto-resolved** — \`${entry.username}\`'s question was answered from past memory.`,
+        `> *"${entry.prompt.length > 80 ? entry.prompt.slice(0, 80) + '...' : entry.prompt}"*`,
+        `No staff reply needed.`,
+      ].join('\n'),
+    });
+  } catch (err) {
+    console.error('⚠️  Failed to send recall webhook:', err.message);
+  }
+
+  if (entry.webhookMsgId) msgIdToTaskId.delete(entry.webhookMsgId);
+  setTimeout(() => pendingChats.delete(taskId), CLEANUP_AFTER_MS);
+
+  console.log(`🧠  Task ${taskId} resolved via memory recall.`);
+  res.json({ ok: true });
 });
 
 // Health-check endpoint
